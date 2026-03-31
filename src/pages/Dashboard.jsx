@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 export default function Dashboard() {
   const [stats, setStats] = useState({ totalSales: 0, totalStock: 0, lowStock: 0 });
   const [invoices, setInvoices] = useState([]);
+  const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -15,11 +16,13 @@ export default function Dashboard() {
       const invs = invRes.data.data || [];
       
       const totalStock = items.reduce((sum, item) => sum + (item.stock || 0), 0);
-      const lowStock = items.filter(item => (item.stock || 0) < 100).length;
+      const lowStockList = items.filter(item => (item.stock || 0) < 100);
+      const lowStock = lowStockList.length;
       const totalSales = invs.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
       
       setStats({ totalSales, totalStock, lowStock });
       setInvoices(invs);
+      setLowStockItems(lowStockList.slice(0, 5));
       setLoading(false);
     }).catch(err => {
       if (err.response && (err.response.status === 401 || err.response.status === 403)) {
@@ -69,30 +72,73 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="card">
-        <h3 style={{ marginBottom: '1rem' }}>Recent Sales</h3>
-        {invoices.length === 0 ? <p>No recent sales.</p> : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid #E2E8F0' }}>
-              <th style={{ padding: '0.75rem' }}>Invoice #</th>
-              <th style={{ padding: '0.75rem' }}>Customer</th>
-              <th style={{ padding: '0.75rem' }}>Amount</th>
-              <th style={{ padding: '0.75rem' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map(inv => (
-            <tr key={inv.name} style={{ borderBottom: '1px solid #E2E8F0' }}>
-              <td style={{ padding: '0.75rem', fontWeight: 600 }}>{inv.name}</td>
-              <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>{inv.customer_name}</td>
-              <td style={{ padding: '0.75rem' }}>₹{inv.total_amount.toFixed(2)}</td>
-              <td style={{ padding: '0.75rem' }}><span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Paid</span></td>
-            </tr>
-            ))}
-          </tbody>
-        </table>
-        )}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Recent Sales</h3>
+          {invoices.length === 0 ? <p>No recent sales.</p> : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '400px' }}>
+              <thead>
+              <tr style={{ borderBottom: '2px solid #E2E8F0' }}>
+                <th style={{ padding: '0.75rem' }}>Invoice #</th>
+                <th style={{ padding: '0.75rem' }}>Customer</th>
+                <th style={{ padding: '0.75rem' }}>Amount</th>
+                <th style={{ padding: '0.75rem' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map(inv => (
+              <tr key={inv.name} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                <td style={{ padding: '0.75rem', fontWeight: 600 }}>{inv.name}</td>
+                <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>{inv.customer_name}</td>
+                <td style={{ padding: '0.75rem' }}>₹{inv.total_amount.toFixed(2)}</td>
+                <td style={{ padding: '0.75rem' }}><span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Paid</span></td>
+              </tr>
+              ))}
+            </tbody>
+            </table>
+          </div>
+          )}
+        </div>
+
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <AlertCircle size={20} color="var(--color-danger)" /> Low Stock Items
+          </h3>
+          {lowStockItems.length === 0 ? <p>All items have sufficient stock.</p> : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '350px' }}>
+              <thead>
+              <tr style={{ borderBottom: '2px solid #E2E8F0' }}>
+                <th style={{ padding: '0.75rem' }}>Item</th>
+                <th style={{ padding: '0.75rem' }}>Stock</th>
+                <th style={{ padding: '0.75rem' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lowStockItems.map(item => (
+              <tr key={item.item_code} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                <td style={{ padding: '0.75rem', fontWeight: 600 }}>{item.item_name}</td>
+                <td style={{ padding: '0.75rem' }}>{item.stock || 0}</td>
+                <td style={{ padding: '0.75rem' }}>
+                  <span style={{ 
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    color: 'var(--color-danger)',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontWeight: 600,
+                    fontSize: '0.75rem'
+                  }}>
+                    Low Stock
+                  </span>
+                </td>
+              </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+          )}
+        </div>
       </div>
     </div>
   );

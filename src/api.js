@@ -34,4 +34,16 @@ export const getInvoices = () => {
   return api.get('/resource/LED Sales Invoice?fields=["name","creation","customer_name","total_amount"]&order_by=creation desc&limit_page_length=5');
 };
 
+export const logout = () => {
+  return api.post('/method/logout');
+};
+
+export const createItem = (item_code, item_name, selling_price) => {
+  return api.post('/resource/LED Item', {
+    item_code,
+    item_name,
+    selling_price
+  });
+};
+
 export default api;

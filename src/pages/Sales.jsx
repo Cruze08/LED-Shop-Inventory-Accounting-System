@@ -81,7 +81,7 @@ export default function Sales() {
       </div>
 
       <div className="card" style={{ maxWidth: '900px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           <div className="input-group">
             <label>Customer Name</label>
             <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Cash Customer" />
@@ -98,49 +98,51 @@ export default function Sales() {
 
         <h3 style={{ marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid #E2E8F0' }}>Items</h3>
         
-        <table style={{ width: '100%', marginBottom: '1.5rem', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr>
-              <th style={{ padding: '0.5rem', width: '45%' }}>Item</th>
-              <th style={{ padding: '0.5rem', width: '15%' }}>Qty</th>
-              <th style={{ padding: '0.5rem', width: '20%' }}>Rate (₹)</th>
-              <th style={{ padding: '0.5rem', width: '15%' }}>Amount</th>
-              <th style={{ padding: '0.5rem', width: '5%' }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((row, index) => (
-              <tr key={index}>
-                <td style={{ padding: '0.5rem' }}>
-                  <select 
-                    value={row.item} 
-                    onChange={(e) => handleItemChange(index, e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px', fontFamily: 'inherit' }}
-                  >
-                    <option value="">Select Item...</option>
-                    {availableItems.map(avail => (
-                      <option key={avail.name} value={avail.name}>
-                        {avail.item_name} (Stock: {avail.stock || 0})
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td style={{ padding: '0.5rem' }}>
-                  <input type="number" min="1" value={row.qty} onChange={(e) => handleRowChange(index, 'qty', e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px', fontFamily: 'inherit' }} />
-                </td>
-                <td style={{ padding: '0.5rem' }}>
-                  <input type="number" value={row.rate} onChange={(e) => handleRowChange(index, 'rate', e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px', fontFamily: 'inherit' }} />
-                </td>
-                <td style={{ padding: '0.5rem', fontWeight: 600, fontSize: '1.125rem' }}>₹{row.amount.toFixed(2)}</td>
-                <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                  <button onClick={() => removeItemRow(index)} style={{ color: 'var(--color-danger)', background: 'transparent', padding: '0.5rem' }}>
-                    <Trash2 size={20} />
-                  </button>
-                </td>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', marginBottom: '1.5rem', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
+            <thead>
+              <tr>
+                <th style={{ padding: '0.5rem', width: '45%' }}>Item</th>
+                <th style={{ padding: '0.5rem', width: '15%' }}>Qty</th>
+                <th style={{ padding: '0.5rem', width: '20%' }}>Rate (₹)</th>
+                <th style={{ padding: '0.5rem', width: '15%' }}>Amount</th>
+                <th style={{ padding: '0.5rem', width: '5%' }}></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((row, index) => (
+                <tr key={index}>
+                  <td style={{ padding: '0.5rem' }}>
+                    <select 
+                      value={row.item} 
+                      onChange={(e) => handleItemChange(index, e.target.value)}
+                      style={{ width: '100%', padding: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px', fontFamily: 'inherit' }}
+                    >
+                      <option value="">Select Item...</option>
+                      {availableItems.map(avail => (
+                        <option key={avail.name} value={avail.name}>
+                          {avail.item_name} (Stock: {avail.stock || 0})
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td style={{ padding: '0.5rem' }}>
+                    <input type="number" min="1" value={row.qty} onChange={(e) => handleRowChange(index, 'qty', e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px', fontFamily: 'inherit' }} />
+                  </td>
+                  <td style={{ padding: '0.5rem' }}>
+                    <input type="number" value={row.rate} onChange={(e) => handleRowChange(index, 'rate', e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px', fontFamily: 'inherit' }} />
+                  </td>
+                  <td style={{ padding: '0.5rem', fontWeight: 600, fontSize: '1.125rem' }}>₹{row.amount.toFixed(2)}</td>
+                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                    <button onClick={() => removeItemRow(index)} style={{ color: 'var(--color-danger)', background: 'transparent', padding: '0.5rem' }}>
+                      <Trash2 size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <button className="btn btn-outline" style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }} onClick={addItemRow}>
           <Plus size={16} /> Add Row
