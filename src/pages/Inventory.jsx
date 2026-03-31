@@ -10,7 +10,7 @@ export default function Inventory() {
 
   useEffect(() => {
     getItems().then(res => {
-      setItems(res.data.data);
+      setItems(res.data?.data || []);
       setLoading(false);
     }).catch(err => {
       if (err.response && (err.response.status === 401 || err.response.status === 403)) {

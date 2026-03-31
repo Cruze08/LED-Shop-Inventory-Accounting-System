@@ -14,9 +14,9 @@ export default function Sales() {
 
   useEffect(() => {
     Promise.all([getItems(), getWarehouses()]).then(([itemsRes, whRes]) => {
-      setAvailableItems(itemsRes.data.data);
-      setWarehouses(whRes.data.data);
-      if (whRes.data.data.length > 0) setWarehouse(whRes.data.data[0].name);
+      setAvailableItems(itemsRes.data?.data || []);
+      setWarehouses(whRes.data?.data || []);
+      if (whRes.data?.data?.length > 0) setWarehouse(whRes.data.data[0].name);
     }).catch(err => {
       if (err.response && (err.response.status === 401 || err.response.status === 403)) {
         navigate('/login');
