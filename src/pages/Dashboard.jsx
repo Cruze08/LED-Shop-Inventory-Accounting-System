@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Package, AlertCircle, IndianRupee } from 'lucide-react';
-import { getItems, getInvoices } from '../api';
+import { getStockLevels, getInvoices } from '../api';
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -10,16 +10,19 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const WAREHOUSE = 'Finished Goods - 0203';
+
   useEffect(() => {
-    Promise.all([getItems(), getInvoices()]).then(([itemsRes, invRes]) => {
-      const items = itemsRes.data.data || [];
-      const invs = invRes.data.data || [];
-      
-      const totalStock = items.reduce((sum, item) => sum + (item.stock || 0), 0);
-      const lowStockList = items.filter(item => (item.stock || 0) < 100);
+    Promise.all([getStockLevels(), getInvoices()]).then(([stockRes, invRes]) => {
+      // Filter Bin rows for the target warehouse only
+      const bins = (stockRes.data?.data || []).filter(b => b.warehouse === WAREHOUSE);
+      const invs = invRes.data?.data || [];
+
+      const totalStock = bins.reduce((sum, b) => sum + (b.actual_qty || 0), 0);
+      const lowStockList = bins.filter(b => (b.actual_qty || 0) < 10);
       const lowStock = lowStockList.length;
-      const totalSales = invs.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-      
+      const totalSales = invs.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+
       setStats({ totalSales, totalStock, lowStock });
       setInvoices(invs);
       setLowStockItems(lowStockList.slice(0, 5));
@@ -118,8 +121,8 @@ export default function Dashboard() {
             <tbody>
               {lowStockItems.map(item => (
               <tr key={item.item_code} style={{ borderBottom: '1px solid #E2E8F0' }}>
-                <td style={{ padding: '0.75rem', fontWeight: 600 }}>{item.item_name}</td>
-                <td style={{ padding: '0.75rem' }}>{item.stock || 0}</td>
+                <td style={{ padding: '0.75rem', fontWeight: 600 }}>{item.item_code}</td>
+                <td style={{ padding: '0.75rem' }}>{item.actual_qty || 0}</td>
                 <td style={{ padding: '0.75rem' }}>
                   <span style={{ 
                     backgroundColor: 'rgba(239, 68, 68, 0.1)',
