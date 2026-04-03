@@ -157,8 +157,8 @@ export default function Inventory() {
 
       {/* ===== ADD ITEM MODAL ===== */}
       {showAddModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '740px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
+          <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '1200px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 70px rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)' }}>
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0' }}>
@@ -171,9 +171,9 @@ export default function Inventory() {
             </div>
 
             {/* Tab Bar */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', padding: '0 1.5rem', overflowX: 'auto', flexShrink: 0 }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', padding: '0 1.5rem', overflowX: 'auto', flexShrink: 0, background: '#F8FAFC' }}>
               {TABS.map(t => (
-                <button key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding: '0.7rem 0.9rem', border: 'none', background: 'none', cursor: 'pointer', fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? 'var(--color-primary)' : 'var(--text-muted)', borderBottom: activeTab === t.key ? '2px solid var(--color-primary)' : '2px solid transparent', fontSize: '0.82rem', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+                <button key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding: '1rem 1.25rem', border: 'none', background: 'none', cursor: 'pointer', fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? 'var(--color-primary)' : 'var(--text-muted)', borderBottom: activeTab === t.key ? '3px solid var(--color-primary)' : '3px solid transparent', fontSize: '0.85rem', whiteSpace: 'nowrap', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' }}>
                   {t.label}
                 </button>
               ))}
@@ -192,6 +192,9 @@ export default function Inventory() {
                     <Field label="Item Name">
                       <input className="input-field" placeholder="e.g. 9W LED Bulb" value={newItem.item_name} onChange={e => set('item_name', e.target.value)} style={iS} />
                     </Field>
+                    <Field label="Brand">
+                      <input className="input-field" placeholder="e.g. Philips" value={newItem.brand} onChange={e => set('brand', e.target.value)} style={iS} />
+                    </Field>
                   </Row>
                   <Row>
                     <Field label="Item Group" required>
@@ -199,6 +202,9 @@ export default function Inventory() {
                     </Field>
                     <Field label="Default Unit of Measure" required>
                       <select className="input-field" required value={newItem.stock_uom} onChange={e => set('stock_uom', e.target.value)} style={iS}>{UOMS.map(u => <option key={u}>{u}</option>)}</select>
+                    </Field>
+                    <Field label="Valuation Method">
+                      <select className="input-field" value={newItem.valuation_method} onChange={e => set('valuation_method', e.target.value)} style={iS}>{VALUATION_METHODS.map(v => <option key={v} value={v}>{v || '-- Default --'}</option>)}</select>
                     </Field>
                   </Row>
                   <Sec>Flags</Sec>
@@ -217,13 +223,8 @@ export default function Inventory() {
                     <Field label="Valuation Rate (₹)">
                       <input className="input-field" type="number" min="0" placeholder="0.00" value={newItem.valuation_rate} onChange={e => set('valuation_rate', e.target.value)} style={iS} />
                     </Field>
-                  </Row>
-                  <Row>
                     <Field label="Standard Selling Rate (₹)">
                       <input className="input-field" type="number" min="0" placeholder="0.00" value={newItem.standard_rate} onChange={e => set('standard_rate', e.target.value)} style={iS} />
-                    </Field>
-                    <Field label="Brand">
-                      <input className="input-field" placeholder="e.g. Philips" value={newItem.brand} onChange={e => set('brand', e.target.value)} style={iS} />
                     </Field>
                   </Row>
                   <Sec>Description</Sec>
@@ -406,7 +407,7 @@ export default function Inventory() {
 const iS = { width: '100%', boxSizing: 'border-box' };
 
 function Row({ children }) {
-  return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.25rem' }}>{children}</div>;
+  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1rem' }}>{children}</div>;
 }
 
 function Field({ label, required, children }) {

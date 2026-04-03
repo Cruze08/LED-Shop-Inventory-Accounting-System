@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, CheckCircle, FileText } from 'lucide-react';
-import { getItems, getItemPrices, getWarehouses, createSalesInvoice } from '../api';
+import {
+  getItems, getItemPrices, getWarehouses, createSalesInvoice,
+  getCustomers, getCompanies, getCurrencies, getPriceLists, getTaxTemplates,
+  getModesOfPayment, getPaymentTermsTemplates, getTermsAndConditions,
+  getCostCenters, getProjects, getSalesPartners, getTerritories, getUOMs,
+  getAddresses, getContacts
+} from '../api';
 import { useNavigate } from 'react-router-dom';
 
 const TODAY = new Date().toISOString().split('T')[0];
@@ -66,6 +72,21 @@ export default function Sales() {
   const [rows, setRows] = useState([emptyRow()]);
   const [availableItems, setAvailableItems] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
+  const [priceLists, setPriceLists] = useState([]);
+  const [taxTemplates, setTaxTemplates] = useState([]);
+  const [modesOfPayment, setModesOfPayment] = useState([]);
+  const [paymentTermsTemplates, setPaymentTermsTemplates] = useState([]);
+  const [termsAndConditions, setTermsAndConditions] = useState([]);
+  const [costCenters, setCostCenters] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [salesPartners, setSalesPartners] = useState([]);
+  const [territories, setTerritories] = useState([]);
+  const [uoms, setUoms] = useState([]);
+  const [customerAddresses, setCustomerAddresses] = useState([]);
+  const [customerContacts, setCustomerContacts] = useState([]);
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -75,20 +96,56 @@ export default function Sales() {
   const set = (f, v) => setInvoice(prev => ({ ...prev, [f]: v }));
 
   useEffect(() => {
-    Promise.all([getItems(), getItemPrices(), getWarehouses()])
-      .then(([itemsRes, pricesRes, whRes]) => {
+    Promise.all([
+      getItems(), getItemPrices(), getWarehouses(), getCustomers(), getCompanies(),
+      getCurrencies(), getPriceLists(), getTaxTemplates(), getModesOfPayment(),
+      getPaymentTermsTemplates(), getTermsAndConditions(), getCostCenters(),
+      getProjects(), getSalesPartners(), getTerritories(), getUOMs()
+    ])
+      .then(([
+        itemsRes, pricesRes, whRes, custRes, compRes, currRes, plRes, taxRes,
+        mopRes, pttRes, tcRes, ccRes, projRes, spRes, terRes, uomRes
+      ]) => {
         const items = itemsRes.data?.data || [];
         const priceMap = {};
         (pricesRes.data?.data || []).forEach(p => { priceMap[p.item_code] = p.price_list_rate; });
         setAvailableItems(items.map(i => ({ ...i, selling_price: priceMap[i.item_code] ?? 0 })));
+
         const whs = whRes.data?.data || [];
         setWarehouses(whs);
-        if (whs.length) set('set_warehouse', whs[0].name);
+        if (whs.length && !invoice.set_warehouse) set('set_warehouse', whs[0].name);
+
+        setCustomers(custRes.data?.data || []);
+        const comps = compRes.data?.data || [];
+        setCompanies(comps);
+        if (comps.length && !invoice.company) set('company', comps[0].name);
+
+        setCurrencies(currRes.data?.data || []);
+        setPriceLists(plRes.data?.data || []);
+        setTaxTemplates(taxRes.data?.data || []);
+        setModesOfPayment(mopRes.data?.data || []);
+        setPaymentTermsTemplates(pttRes.data?.data || []);
+        setTermsAndConditions(tcRes.data?.data || []);
+        setCostCenters(ccRes.data?.data || []);
+        setProjects(projRes.data?.data || []);
+        setSalesPartners(spRes.data?.data || []);
+        setTerritories(terRes.data?.data || []);
+        setUoms(uomRes.data?.data || []);
       })
       .catch(err => {
         if (err.response && (err.response.status === 401 || err.response.status === 403)) navigate('/login');
       });
   }, [navigate]);
+
+  useEffect(() => {
+    if (invoice.customer) {
+      getAddresses('Customer', invoice.customer).then(res => setCustomerAddresses(res.data?.data || []));
+      getContacts('Customer', invoice.customer).then(res => setCustomerContacts(res.data?.data || []));
+    } else {
+      setCustomerAddresses([]);
+      setCustomerContacts([]);
+    }
+  }, [invoice.customer]);
 
   // Item row helpers
   const addRow = () => setRows(r => [...r, emptyRow()]);
@@ -152,11 +209,11 @@ export default function Sales() {
         </div>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', overflow: 'hidden', maxWidth: '980px' }}>
+      <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', overflow: 'hidden', width: '100%', display: 'flex', flexDirection: 'column', border: '1px solid #E2E8F0' }}>
 
         {/* === Document Header === */}
         <div style={{ padding: '1.5rem 1.5rem 0', borderBottom: '1px solid #E2E8F0' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
             <div>
               <label style={lS}>Series <span style={{ color: 'red' }}>*</span></label>
               <select className="input-field" value={invoice.naming_series} onChange={e => set('naming_series', e.target.value)} style={iS}>
@@ -169,7 +226,13 @@ export default function Sales() {
             </div>
             <div>
               <label style={lS}>Customer</label>
-              <input className="input-field" placeholder="Customer name" value={invoice.customer} onChange={e => set('customer', e.target.value)} style={iS} />
+              <select className="input-field" value={invoice.customer} onChange={e => {
+                const c = customers.find(x => x.name === e.target.value);
+                setInvoice(prev => ({ ...prev, customer: e.target.value, customer_name: c?.customer_name || '' }));
+              }} style={iS}>
+                <option value="">-- Select Customer --</option>
+                {customers.map(c => <option key={c.name} value={c.name}>{c.customer_name || c.name}</option>)}
+              </select>
             </div>
             <div>
               <label style={lS}>Payment Due Date</label>
@@ -178,10 +241,10 @@ export default function Sales() {
           </div>
 
           {/* Tab Bar */}
-          <div style={{ display: 'flex', overflowX: 'auto', gap: 0 }}>
+          <div style={{ display: 'flex', overflowX: 'auto', gap: 0, background: '#F8FAFC', margin: '0 -1.5rem', padding: '0 1.5rem' }}>
             {TABS.map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
-                style={{ padding: '0.65rem 1rem', border: 'none', background: 'none', cursor: 'pointer', fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? 'var(--color-primary)' : 'var(--text-muted)', borderBottom: activeTab === t.key ? '2px solid var(--color-primary)' : '2px solid transparent', fontSize: '0.82rem', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+                style={{ padding: '0.75rem 1.25rem', border: 'none', background: 'none', cursor: 'pointer', fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? 'var(--color-primary)' : 'var(--text-muted)', borderBottom: activeTab === t.key ? '3px solid var(--color-primary)' : '3px solid transparent', fontSize: '0.82rem', whiteSpace: 'nowrap', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' }}>
                 {t.label}
               </button>
             ))}
@@ -198,12 +261,14 @@ export default function Sales() {
                 <input className="input-field" placeholder="e.g. Walk-in Customer" value={invoice.customer_name} onChange={e => set('customer_name', e.target.value)} style={iS} />
               </F>
               <F label="Tax ID">
-                <input className="input-field" placeholder="GST / PAN" value={invoice.tax_id} onChange={e => set('tax_id', e.target.value)} style={iS} />
+                <input className="input-field" placeholder="Calculated from Customer" disabled value={invoice.tax_id} style={iS} />
               </F>
             </R2>
             <R2>
               <F label="Company">
-                <input className="input-field" placeholder="Your company name" value={invoice.company} onChange={e => set('company', e.target.value)} style={iS} />
+                <select className="input-field" value={invoice.company} onChange={e => set('company', e.target.value)} style={iS}>
+                  {companies.map(c => <option key={c.name} value={c.name}>{c.company_name || c.name}</option>)}
+                </select>
               </F>
               <F label="Posting Time">
                 <input className="input-field" type="time" value={invoice.posting_time} onChange={e => set('posting_time', e.target.value)} style={iS} />
@@ -213,11 +278,14 @@ export default function Sales() {
             <R2>
               <F label="Currency">
                 <select className="input-field" value={invoice.currency} onChange={e => set('currency', e.target.value)} style={iS}>
-                  {['INR', 'USD', 'EUR', 'GBP'].map(c => <option key={c}>{c}</option>)}
+                  {currencies.length ? currencies.map(c => <option key={c.name} value={c.name}>{c.name}</option>) : <option>INR</option>}
                 </select>
               </F>
               <F label="Price List">
-                <input className="input-field" placeholder="Standard Selling" value={invoice.selling_price_list} onChange={e => set('selling_price_list', e.target.value)} style={iS} />
+                <select className="input-field" value={invoice.selling_price_list} onChange={e => set('selling_price_list', e.target.value)} style={iS}>
+                  {priceLists.map(pl => <option key={pl.name} value={pl.name}>{pl.name}</option>)}
+                  {!priceLists.length && <option>Standard Selling</option>}
+                </select>
               </F>
             </R2>
             <Sec>Flags</Sec>
@@ -227,15 +295,16 @@ export default function Sales() {
               <CF label="Update Stock" v={invoice.update_stock} onChange={v => set('update_stock', v)} />
               <CF label="Ignore Pricing Rule" v={invoice.ignore_pricing_rule} onChange={v => set('ignore_pricing_rule', v)} />
             </div>
-            {!!invoice.update_stock && (<>
-              <Sec>Warehouse</Sec>
-              <F label="Source Warehouse">
-                <select className="input-field" value={invoice.set_warehouse} onChange={e => set('set_warehouse', e.target.value)} style={{ ...iS, maxWidth: '50%' }}>
-                  <option value="">-- Select --</option>
-                  {warehouses.map(w => <option key={w.name} value={w.name}>{w.warehouse_name || w.name}</option>)}
-                </select>
-              </F>
-            </>)}
+            <R2>
+              {!!invoice.update_stock && (
+                <L label="Source Warehouse" v={invoice.set_warehouse} onChange={v => set('set_warehouse', v)} options={warehouses} />
+              )}
+              {!!invoice.is_return && (
+                <F label="Return Against">
+                  <input className="input-field" placeholder="Sales Invoice ID" value={invoice.return_against} onChange={e => set('return_against', e.target.value)} style={iS} />
+                </F>
+              )}
+            </R2>
           </>)}
 
           {/* ── ITEMS ── */}
@@ -244,11 +313,12 @@ export default function Sales() {
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '640px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #E2E8F0', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                    <th style={{ padding: '0.6rem 0.5rem', width: '35%' }}>Item</th>
-                    <th style={{ padding: '0.6rem 0.5rem', width: '10%' }}>UOM</th>
-                    <th style={{ padding: '0.6rem 0.5rem', width: '12%' }}>Qty</th>
-                    <th style={{ padding: '0.6rem 0.5rem', width: '15%' }}>Rate (₹)</th>
-                    <th style={{ padding: '0.6rem 0.5rem', width: '15%' }}>Amount</th>
+                    <th style={{ padding: '0.6rem 0.5rem', width: '30%' }}>Item</th>
+                    <th style={{ padding: '0.6rem 0.5rem', width: '15%' }}>UOM</th>
+                    <th style={{ padding: '0.6rem 0.5rem', width: '15%' }}>Warehouse</th>
+                    <th style={{ padding: '0.6rem 0.5rem', width: '10%' }}>Qty</th>
+                    <th style={{ padding: '0.6rem 0.5rem', width: '12%' }}>Rate (₹)</th>
+                    <th style={{ padding: '0.6rem 0.5rem', width: '13%' }}>Amount</th>
                     <th style={{ padding: '0.6rem 0.5rem', width: '5%' }}></th>
                   </tr>
                 </thead>
@@ -257,12 +327,23 @@ export default function Sales() {
                     <tr key={i} style={{ borderBottom: '1px solid #F1F5F9' }}>
                       <td style={{ padding: '0.5rem' }}>
                         <select value={row.item_code} onChange={e => handleItemSelect(i, e.target.value)}
-                          style={{ width: '100%', padding: '0.6rem', border: '1px solid #CBD5E1', borderRadius: '6px', fontFamily: 'inherit', fontSize: '0.875rem' }}>
+                          style={tS}>
                           <option value="">Select Item...</option>
                           {availableItems.map(a => <option key={a.item_code} value={a.item_code}>{a.item_name} ({a.item_code})</option>)}
                         </select>
                       </td>
-                      <td style={{ padding: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>{row.uom}</td>
+                      <td style={{ padding: '0.5rem' }}>
+                        <select value={row.uom} onChange={e => setRows(prev => prev.map((r, idx) => idx === i ? { ...r, uom: e.target.value } : r))} style={tS}>
+                          {uoms.map(u => <option key={u.name} value={u.name}>{u.name}</option>)}
+                          {!uoms.length && <option>Nos</option>}
+                        </select>
+                      </td>
+                      <td style={{ padding: '0.5rem' }}>
+                        <select value={row.warehouse || invoice.set_warehouse} onChange={e => setRows(prev => prev.map((r, idx) => idx === i ? { ...r, warehouse: e.target.value } : r))} style={tS}>
+                          <option value="">(Default)</option>
+                          {warehouses.map(w => <option key={w.name} value={w.name}>{w.warehouse_name || w.name}</option>)}
+                        </select>
+                      </td>
                       <td style={{ padding: '0.5rem' }}>
                         <input type="number" min="1" value={row.qty} onChange={e => handleRowNum(i, 'qty', e.target.value)}
                           style={{ width: '100%', padding: '0.6rem', border: '1px solid #CBD5E1', borderRadius: '6px', fontFamily: 'inherit', textAlign: 'right' }} />
@@ -308,11 +389,9 @@ export default function Sales() {
             <div>
               <R2>
                 <F label="Taxes and Charges Template">
-                  <select className="input-field" style={iS}>
+                  <select className="input-field" value={invoice.taxes_and_charges} onChange={e => set('taxes_and_charges', e.target.value)} style={iS}>
                     <option value="">-- Select Tax Template --</option>
-                    <option>GST 18% - LEDCO</option>
-                    <option>GST 5% - LEDCO</option>
-                    <option>Out of State GST 18%</option>
+                    {taxTemplates.map(t => <option key={t.name} value={t.name}>{t.title || t.name}</option>)}
                   </select>
                 </F>
                 <F label="Shipping Rule">
@@ -333,11 +412,7 @@ export default function Sales() {
           {activeTab === 'payments' && (<>
             <Sec>Payment Details</Sec>
             <R2>
-              <F label="Mode of Payment">
-                <select className="input-field" value={invoice.mode_of_payment} onChange={e => set('mode_of_payment', e.target.value)} style={iS}>
-                  {['Cash', 'Cheque', 'Bank Transfer', 'UPI', 'Card', 'Credit'].map(m => <option key={m}>{m}</option>)}
-                </select>
-              </F>
+              <L label="Mode of Payment" v={invoice.mode_of_payment} onChange={v => set('mode_of_payment', v)} options={modesOfPayment} />
               <F label="Paid Amount (₹)">
                 <input className="input-field" type="number" min="0" placeholder={grandTotal.toFixed(2)} value={invoice.paid_amount} onChange={e => set('paid_amount', e.target.value)} style={iS} />
               </F>
@@ -355,18 +430,25 @@ export default function Sales() {
             <Sec>Billing Address</Sec>
             <R2>
               <F label="Customer Address">
-                <input className="input-field" placeholder="Address" value={invoice.customer_address} onChange={e => set('customer_address', e.target.value)} style={iS} />
+                <select className="input-field" value={invoice.customer_address} onChange={e => set('customer_address', e.target.value)} style={iS}>
+                  <option value="">-- Select Address --</option>
+                  {customerAddresses.map(a => <option key={a.name} value={a.name}>{a.address_line1}, {a.city}</option>)}
+                </select>
               </F>
               <F label="Contact Person">
-                <input className="input-field" placeholder="Contact name" value={invoice.contact_person} onChange={e => set('contact_person', e.target.value)} style={iS} />
+                <select className="input-field" value={invoice.contact_person} onChange={e => set('contact_person', e.target.value)} style={iS}>
+                  <option value="">-- Select Contact --</option>
+                  {customerContacts.map(c => <option key={c.name} value={c.name}>{c.first_name} {c.last_name}</option>)}
+                </select>
               </F>
             </R2>
             <R2>
-              <F label="Territory">
-                <input className="input-field" placeholder="e.g. Maharashtra" value={invoice.territory} onChange={e => set('territory', e.target.value)} style={iS} />
-              </F>
+              <L label="Territory" v={invoice.territory} onChange={v => set('territory', v)} options={territories} />
               <F label="Shipping Address">
-                <input className="input-field" placeholder="Shipping address" value={invoice.shipping_address_name} onChange={e => set('shipping_address_name', e.target.value)} style={iS} />
+                <select className="input-field" value={invoice.shipping_address_name} onChange={e => set('shipping_address_name', e.target.value)} style={iS}>
+                  <option value="">-- Select Address --</option>
+                  {customerAddresses.map(a => <option key={a.name} value={a.name}>{a.address_line1}, {a.city}</option>)}
+                </select>
               </F>
             </R2>
             <Sec>Company Address</Sec>
@@ -378,19 +460,13 @@ export default function Sales() {
           {/* ── TERMS ── */}
           {activeTab === 'terms' && (<>
             <Sec>Payment Terms</Sec>
-            <F label="Payment Terms Template">
-              <select className="input-field" value={invoice.payment_terms_template} onChange={e => set('payment_terms_template', e.target.value)} style={{ ...iS, maxWidth: '50%' }}>
-                <option value="">-- Select Template --</option>
-                <option>30 Days</option>
-                <option>Immediate</option>
-                <option>Net 15</option>
-                <option>Net 45</option>
-              </select>
-            </F>
+            <R2>
+              <L label="Payment Terms Template" v={invoice.payment_terms_template} onChange={v => set('payment_terms_template', v)} options={paymentTermsTemplates} />
+            </R2>
             <Sec>Terms & Conditions</Sec>
-            <F label="Terms & Conditions Template">
-              <input className="input-field" placeholder="Terms template name" value={invoice.tc_name} onChange={e => set('tc_name', e.target.value)} style={{ ...iS, maxWidth: '50%', marginBottom: '0.75rem' }} />
-            </F>
+            <R2>
+              <L label="Terms & Conditions Template" v={invoice.tc_name} onChange={v => set('tc_name', v)} options={termsAndConditions} />
+            </R2>
             <F label="Terms & Conditions (Text)">
               <textarea className="input-field" rows={5} placeholder="Enter terms and conditions..." value={invoice.terms} onChange={e => set('terms', e.target.value)} style={{ ...iS, resize: 'vertical' }} />
             </F>
@@ -400,27 +476,21 @@ export default function Sales() {
           {activeTab === 'more' && (<>
             <Sec>Customer PO Details</Sec>
             <R2>
-              <F label="Customer's Purchase Order No.">
+              <F label="Customer PO No.">
                 <input className="input-field" placeholder="PO-2024-001" value={invoice.po_no} onChange={e => set('po_no', e.target.value)} style={iS} />
               </F>
-              <F label="Customer's Purchase Order Date">
+              <F label="Customer PO Date">
                 <input className="input-field" type="date" value={invoice.po_date} onChange={e => set('po_date', e.target.value)} style={iS} />
               </F>
             </R2>
             <Sec>Accounting</Sec>
             <R2>
-              <F label="Cost Center">
-                <input className="input-field" placeholder="Cost center" value={invoice.cost_center} onChange={e => set('cost_center', e.target.value)} style={iS} />
-              </F>
-              <F label="Project">
-                <input className="input-field" placeholder="Associated project" value={invoice.project} onChange={e => set('project', e.target.value)} style={iS} />
-              </F>
+              <L label="Cost Center" v={invoice.cost_center} onChange={v => set('cost_center', v)} options={costCenters} />
+              <L label="Project" v={invoice.project} onChange={v => set('project', v)} options={projects} />
             </R2>
             <Sec>Sales Team</Sec>
             <R2>
-              <F label="Sales Partner">
-                <input className="input-field" placeholder="Sales partner name" value={invoice.sales_partner} onChange={e => set('sales_partner', e.target.value)} style={iS} />
-              </F>
+              <L label="Sales Partner" v={invoice.sales_partner} onChange={v => set('sales_partner', v)} options={salesPartners} />
               <F label="Commission Rate (%)">
                 <input className="input-field" type="number" min="0" max="100" placeholder="0" value={invoice.commission_rate} onChange={e => set('commission_rate', e.target.value)} style={iS} />
               </F>
@@ -460,9 +530,20 @@ export default function Sales() {
 // ── Helpers ──
 const lS = { display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#374151', marginBottom: '0.35rem' };
 const iS = { width: '100%', boxSizing: 'border-box' };
+const tS = { width: '100%', padding: '0.6rem', border: '1px solid #CBD5E1', borderRadius: '6px', fontFamily: 'inherit', fontSize: '0.875rem', background: '#fff' };
 
+function L({ label, v, onChange, options }) {
+  return (
+    <F label={label}>
+      <select className="input-field" value={v} onChange={e => onChange(e.target.value)} style={iS}>
+        <option value="">-- Select --</option>
+        {options.map(o => <option key={o.name} value={o.name}>{o.title || o.name || o.cost_center_name || o.project_name}</option>)}
+      </select>
+    </F>
+  );
+}
 function R2({ children }) {
-  return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.25rem' }}>{children}</div>;
+  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '1rem' }}>{children}</div>;
 }
 function F({ label, required, children }) {
   return (
